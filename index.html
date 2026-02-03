@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cute AI Dost - Stable Voice Edition</title>
+    <title>Cute AI Dost - Integrated Pro Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Face Tracking Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
     <style>
@@ -22,7 +21,6 @@
             overflow: hidden;
         }
 
-        /* Character Stage */
         .character-stage {
             position: relative;
             width: 350px;
@@ -34,7 +32,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Head Swaying Animation */
         .head-group {
             position: relative;
             z-index: 10;
@@ -62,7 +59,6 @@
         .bun-l { left: -15px; }
         .bun-r { right: -15px; }
 
-        /* Eyes & Pupils */
         .eye-container {
             position: absolute;
             top: 65px;
@@ -109,7 +105,6 @@
             92.5% { height: 100%; }
         }
 
-        /* Mouth & Speaking */
         .mouth-area {
             position: absolute;
             bottom: 35px;
@@ -136,7 +131,6 @@
             100% { height: 26px; width: 30px; border-radius: 40% 40% 30% 30%; }
         }
 
-        /* Shirt */
         .body-part {
             width: 120px;
             height: 130px;
@@ -147,14 +141,12 @@
             z-index: 5;
         }
 
-        /* Hidden Tracking Video */
         #camVideo {
             position: fixed;
             top: -9999px;
             left: -9999px;
         }
 
-        /* UI Elements */
         .control-panel {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(25px);
@@ -219,7 +211,7 @@
     </div>
 
     <!-- Minimal Subtitle -->
-    <div id="aiTextDisplay" class="text-center max-w-lg mb-6 h-14 text-xl font-semibold text-pink-300 opacity-0 transition-all duration-300 scale-95">
+    <div id="aiTextDisplay" class="text-center max-w-lg mb-6 h-14 text-xl font-semibold text-pink-300 opacity-0 transition-all duration-300 scale-95 drop-shadow-lg">
         "Tarun bhai, hu taiyar chu!"
     </div>
 
@@ -231,11 +223,11 @@
             </button>
             
             <div class="flex flex-col gap-2 flex-1 max-w-[150px]">
-                <span class="text-[9px] uppercase font-black text-slate-400 tracking-tighter">Vaat karvano samay</span>
-                <input type="range" id="speechLength" min="15" max="100" value="40" class="range-slider appearance-none bg-slate-800 h-1.5 rounded-full outline-none">
+                <span class="text-[9px] uppercase font-black text-slate-400 tracking-tighter">Bolvanu Samay (Time)</span>
+                <input type="range" id="speechLength" min="15" max="120" value="50" class="range-slider appearance-none bg-slate-800 h-1.5 rounded-full outline-none">
                 <div class="flex justify-between text-[8px] text-slate-500 font-black">
-                    <span>TURBO</span>
-                    <span>DETAIL</span>
+                    <span>CHOTU (Short)</span>
+                    <span>MOTU (Long)</span>
                 </div>
             </div>
         </div>
@@ -312,7 +304,7 @@
             const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechAPI) return;
             recognizer = new SpeechAPI();
-            recognizer.lang = 'hi-IN'; // Sunne mate Hindi support
+            recognizer.lang = 'hi-IN';
             recognizer.continuous = false;
 
             recognizer.onstart = () => {
@@ -322,7 +314,9 @@
 
             recognizer.onresult = (e) => {
                 const text = e.results[0][0].transcript;
-                getAIResponse(text);
+                
+                // Python Script Commands Logic (Integrated)
+                handlePythonCommands(text);
             };
 
             recognizer.onend = () => {
@@ -332,13 +326,42 @@
             };
         }
 
+        function handlePythonCommands(text) {
+            const query = text.toLowerCase();
+            
+            if (query.includes("open youtube")) {
+                window.open("https://www.youtube.com", "_blank");
+                playStableVoice("YouTube kholi rahyu chu, maze karo!");
+                return;
+            }
+            if (query.includes("open google")) {
+                window.open("https://www.google.com", "_blank");
+                playStableVoice("Google uncle hazir che!");
+                return;
+            }
+            if (query.includes("open gmail")) {
+                window.open("https://mail.google.com", "_blank");
+                playStableVoice("Gmail kholi nakhyu!");
+                return;
+            }
+            if (query.includes("search") || query.includes("search on google")) {
+                const searchTerm = query.replace("search", "").replace("on google", "").trim();
+                window.open(`https://www.google.com/search?q=${searchTerm}`, "_blank");
+                playStableVoice(`${searchTerm} mate Google kari rahi chu.`);
+                return;
+            }
+
+            // Default Gemini Response
+            getAIResponse(text);
+        }
+
         async function getAIResponse(input) {
             updateUI("Vicharu chu", "bg-blue-400");
             const length = document.getElementById('speechLength').value;
             
-            const prompt = `Aap Tarun ji ki cute bachi dost hain. Reply Hinglish mein dein.
-            STRICT RULE: Only use one consistent cute voice. Be very sweet and cheerful.
-            Max response: ${Math.floor(length/8)} words.`;
+            const prompt = `Aap Tarun ji ki cute bachi dost hain. Reply Hinglish mein dein. 
+            Aapne abhi browser commands handle karna seekha hai (YouTube, Google). 
+            Jawab chota aur cute rakhein (max ${Math.floor(length/8)} words).`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -358,7 +381,6 @@
             }
         }
 
-        // Stable Cute Voice logic
         async function playStableVoice(text, retry = 0) {
             isSpeaking = true;
             updateUI("Bolye chu", "bg-pink-500");
@@ -376,17 +398,12 @@
                         contents: [{ parts: [{ text: `Say this like a cute 5yr old girl: ${text}` }] }],
                         generationConfig: {
                             responseModalities: ["AUDIO"],
-                            speechConfig: { 
-                                voiceConfig: { 
-                                    prebuiltVoiceConfig: { voiceName: STABLE_VOICE } 
-                                } 
-                            }
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: STABLE_VOICE } } }
                         }
                     })
                 });
 
                 if (!res.ok) throw new Error("API failed");
-
                 const data = await res.json();
                 const pcmData = data.candidates[0].content.parts[0].inlineData.data;
                 const mime = data.candidates[0].content.parts[0].inlineData.mimeType;
@@ -395,13 +412,10 @@
                 await playAudio(pcmData, sRate);
 
             } catch (err) {
-                // If API fails, retry once before doing anything else
                 if (retry < 1) {
                     setTimeout(() => playStableVoice(text, retry + 1), 500);
                     return;
                 }
-                
-                // If even retry fails, wait and show error but DON'T use robotic voice
                 updateUI("Aawaj ma bhul che", "bg-red-500");
                 cleanupTurn();
             }
