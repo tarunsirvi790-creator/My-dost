@@ -1,317 +1,465 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="gu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnShare - Professional Ad System</title>
+    <title>Cute AI Dost - Stable Voice Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Face Tracking Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
     <style>
-        @keyframes progress { 0% { width: 0%; } 100% { width: 100%; } }
-        .animate-progress { animation: progress 5s linear forwards; }
-        .page-transition { transition: all 0.4s ease; }
-        .auth-bg { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
-        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        :root {
+            --skin: #ffe0bd;
+            --hair: #4b2c20;
+            --shirt: #ffeb3b;
+            --pink: #f472b6;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            overflow: hidden;
+        }
+
+        /* Character Stage */
+        .character-stage {
+            position: relative;
+            width: 350px;
+            height: 420px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Head Swaying Animation */
+        .head-group {
+            position: relative;
+            z-index: 10;
+            transition: transform 0.1s linear; 
+        }
+
+        .head-base {
+            width: 160px;
+            height: 170px;
+            background: var(--skin);
+            border-radius: 80px 80px 65px 65px;
+            position: relative;
+            box-shadow: inset -10px -10px 25px rgba(0,0,0,0.15);
+        }
+
+        .bun {
+            width: 70px;
+            height: 70px;
+            background: var(--hair);
+            border-radius: 50%;
+            position: absolute;
+            top: -30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .bun-l { left: -15px; }
+        .bun-r { right: -15px; }
+
+        /* Eyes & Pupils */
+        .eye-container {
+            position: absolute;
+            top: 65px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 30px;
+        }
+        .eye {
+            width: 40px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .pupil {
+            width: 26px;
+            height: 26px;
+            background: #23110a;
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.1s ease-out;
+        }
+        .pupil::after {
+            content: '';
+            position: absolute;
+            width: 10px; height: 10px; background: white;
+            border-radius: 50%; top: 4px; left: 4px;
+        }
+        .blink-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 0%;
+            background: var(--skin);
+            z-index: 5;
+            animation: blink-anim 4s infinite;
+        }
+        @keyframes blink-anim {
+            0%, 90%, 95%, 100% { height: 0%; }
+            92.5% { height: 100%; }
+        }
+
+        /* Mouth & Speaking */
+        .mouth-area {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 45px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mouth-shape {
+            width: 24px;
+            height: 6px;
+            background: #e11d48;
+            border-radius: 20px;
+            transition: all 0.1s ease;
+        }
+        .is-speaking .mouth-shape {
+            animation: mouth-sync 0.12s infinite alternate;
+        }
+        @keyframes mouth-sync {
+            0% { height: 4px; width: 18px; }
+            100% { height: 26px; width: 30px; border-radius: 40% 40% 30% 30%; }
+        }
+
+        /* Shirt */
+        .body-part {
+            width: 120px;
+            height: 130px;
+            background: var(--shirt);
+            border-radius: 50px 50px 20px 20px;
+            margin-top: -15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 5;
+        }
+
+        /* Hidden Tracking Video */
+        #camVideo {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+        }
+
+        /* UI Elements */
+        .control-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #f472b6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
+        }
+
+        .glow-active {
+            box-shadow: 0 0 30px rgba(244, 114, 182, 0.4);
+            animation: pulse-border 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            from { border-color: rgba(244, 114, 182, 0.2); }
+            to { border-color: rgba(244, 114, 182, 0.8); }
+        }
     </style>
 </head>
-<body class="bg-slate-50 font-sans">
+<body class="text-slate-100 min-h-screen font-sans flex flex-col items-center justify-center p-4">
 
-    <!-- मुख्य कंटेनर -->
-    <div id="mainContainer" class="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
-        
-        <!-- PART 1. FRONTEND: LOGIN & SIGNUP -->
-        <div id="authPage" class="min-h-screen auth-bg flex flex-col justify-center p-8 text-white">
-            <div class="mb-10 text-center">
-                <div class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-                    <i class="fa-solid fa-coins text-4xl text-yellow-300"></i>
+    <!-- Camera Feed -->
+    <video id="camVideo" width="320" height="240" preload autoplay loop muted></video>
+
+    <!-- Status Banner -->
+    <div id="spiritReminder" class="fixed top-6 flex items-center gap-2 text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-4 py-1.5 rounded-full font-bold tracking-widest uppercase animate-pulse">
+        <i data-lucide="sun" class="w-3 h-3"></i> 9 PM Na Sadhana Mate Taiyar
+    </div>
+
+    <!-- Avatar Container -->
+    <div id="characterStage" class="character-stage mb-4">
+        <div class="head-group" id="headContainer">
+            <div class="bun bun-l"></div>
+            <div class="bun bun-r"></div>
+            <div class="head-base">
+                <div class="eye-container">
+                    <div class="eye"><div class="blink-layer"></div><div class="pupil"></div></div>
+                    <div class="eye"><div class="blink-layer"></div><div class="pupil"></div></div>
                 </div>
-                <h1 class="text-3xl font-extrabold tracking-tight">EarnShare</h1>
-                <p id="authSubtitle" class="text-indigo-100 text-sm mt-2">विज्ञापन देखें, रिवॉर्ड कमाएं</p>
+                <div class="mouth-area">
+                    <div id="mouthShape" class="mouth-shape"></div>
+                </div>
             </div>
+        </div>
+        <div class="body-part"></div>
+    </div>
+
+    <!-- AI Voice Locked Indicator -->
+    <div class="mb-4 flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
+        <i data-lucide="lock" class="w-3 h-3 text-pink-400"></i>
+        <span class="text-[9px] font-bold text-pink-400 uppercase tracking-widest">Aoede Voice Locked (Cute)</span>
+    </div>
+
+    <!-- Minimal Subtitle -->
+    <div id="aiTextDisplay" class="text-center max-w-lg mb-6 h-14 text-xl font-semibold text-pink-300 opacity-0 transition-all duration-300 scale-95">
+        "Tarun bhai, hu taiyar chu!"
+    </div>
+
+    <!-- Minimal Controls -->
+    <div class="control-panel p-6 rounded-[2.5rem] flex flex-col items-center gap-6 shadow-2xl">
+        <div class="flex items-center gap-10 w-full justify-center">
+            <button id="micBtn" onclick="toggleMain()" class="w-20 h-20 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 flex items-center justify-center shadow-xl shadow-pink-500/20 active:scale-90 transition-all">
+                <i data-lucide="mic" id="micIcon" class="w-8 h-8 text-white"></i>
+            </button>
             
-            <div id="authForm" class="space-y-4">
-                <div class="glass p-1 rounded-2xl border border-white/20">
-                    <input type="text" id="authEmail" placeholder="मोबाइल नंबर या ईमेल" class="w-full bg-transparent p-4 outline-none placeholder:text-indigo-200 text-white">
-                </div>
-                <div class="glass p-1 rounded-2xl border border-white/20">
-                    <input type="password" id="authPass" placeholder="पासवर्ड" class="w-full bg-transparent p-4 outline-none placeholder:text-indigo-200 text-white">
-                </div>
-                <button onclick="handleAuth()" class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-bold shadow-xl hover:bg-indigo-50 active:scale-95 transition-all">
-                    प्रवेश करें (Login)
-                </button>
-                <p class="text-center text-xs text-indigo-100 mt-4">
-                    नया अकाउंट? <button onclick="toggleAuthMode()" class="font-bold underline">यहाँ रजिस्टर करें</button>
-                </p>
-            </div>
-        </div>
-
-        <!-- DASHBOARD CONTAINER -->
-        <div id="dashboardPage" class="hidden min-h-screen pb-24">
-            
-            <!-- USER VIEW (Frontend) -->
-            <div id="userPage" class="page-transition">
-                <header class="bg-white p-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100 mb-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">U</div>
-                            <div>
-                                <h1 class="text-sm font-bold text-slate-800">नमस्ते, यूजर!</h1>
-                                <p class="text-[10px] text-green-500 font-bold uppercase tracking-widest">Verified Account</p>
-                            </div>
-                        </div>
-                        <button onclick="logout()" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
-                            <i class="fa-solid fa-power-off"></i>
-                        </button>
-                    </div>
-
-                    <!-- वॉलेट कार्ड -->
-                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2rem] p-6 text-white shadow-2xl relative overflow-hidden">
-                        <div class="relative z-10">
-                            <p class="text-[10px] opacity-60 uppercase font-bold tracking-widest mb-1">कुल वॉलेट बैलेंस</p>
-                            <div class="flex justify-between items-center">
-                                <h2 class="text-4xl font-black">₹ <span id="balance">45.50</span></h2>
-                                <button onclick="openWithdrawModal()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-[10px] font-bold shadow-lg transition-all">निकासी</button>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-white/10 flex justify-between">
-                                <span class="text-[9px] text-slate-400 uppercase">आज की कमाई: ₹12.50</span>
-                                <span class="text-[9px] text-slate-400 uppercase">टोटल विथड्रावल: ₹500</span>
-                            </div>
-                        </div>
-                        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl"></div>
-                    </div>
-                </header>
-
-                <main class="px-6 space-y-6">
-                    <!-- PART 3. ADS NETWORK INTEGRATION -->
-                    <div class="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm text-center relative overflow-hidden">
-                        <div class="bg-amber-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                            <i class="fa-solid fa-play text-amber-500 text-3xl"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-800 text-lg mb-2">रिवॉर्ड विज्ञापन</h3>
-                        <p class="text-xs text-slate-500 mb-8 leading-relaxed">एक विज्ञापन देखें और ₹0.50 तुरंत अपने वॉलेट में जोड़ें।</p>
-                        
-                        <!-- AD BUTTON -->
-                        <button id="watchAdBtn" onclick="startAd()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <i class="fa-solid fa-bolt"></i> विज्ञापन शुरू करें
-                        </button>
-                    </div>
-
-                    <!-- MOM'S BUSINESS PROMOTION -->
-                    <div class="bg-rose-600 rounded-[2rem] p-5 text-white flex items-center gap-4 shadow-xl shadow-rose-100">
-                        <div class="bg-white/20 p-4 rounded-2xl text-2xl"><i class="fa-solid fa-utensils"></i></div>
-                        <div class="flex-1">
-                            <h4 class="font-bold text-sm">मम्मी स्पेशल ऑफर! 🥟</h4>
-                            <p class="text-[10px] opacity-80">वॉलेट बैलेंस से 'पानी पूरी पैलेट्स' खरीदें और पाएं 20% डिस्काउंट।</p>
-                        </div>
-                        <button class="bg-white text-rose-600 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-arrow-right text-xs"></i></button>
-                    </div>
-                </main>
-            </div>
-
-            <!-- PART 2. BACKEND & OWNER PANEL -->
-            <div id="ownerPage" class="page-transition hidden">
-                <header class="bg-slate-900 p-8 rounded-b-[3rem] text-white mb-8">
-                    <div class="flex justify-between items-center mb-8">
-                        <h1 class="text-2xl font-bold">Owner Analytics 👑</h1>
-                        <span class="bg-green-500/20 text-green-400 text-[9px] px-3 py-1 rounded-full border border-green-500/30">SERVER LIVE</span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">कुल रेवेन्यू (Net)</p>
-                            <p class="text-2xl font-black text-green-400">₹ 42.5k</p>
-                        </div>
-                        <div class="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">एक्टिव विज्ञापन व्यूज</p>
-                            <p class="text-2xl font-black text-blue-400">84k+</p>
-                        </div>
-                    </div>
-                </header>
-
-                <main class="px-6 space-y-8">
-                    <!-- FRAUD DETECTION & TRACKING -->
-                    <section>
-                        <h4 class="font-bold text-slate-800 mb-4 px-2 flex justify-between items-center">
-                            <span>Fraud Detection</span>
-                            <i class="fa-solid fa-shield-halved text-rose-500"></i>
-                        </h4>
-                        <div class="bg-white border border-slate-100 rounded-3xl p-4 space-y-3 shadow-sm">
-                            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-2xl">
-                                <div>
-                                    <p class="text-xs font-bold text-slate-800">IP: 192.168.1.5</p>
-                                    <p class="text-[9px] text-rose-500 font-bold uppercase">Bot behavior detected</p>
-                                </div>
-                                <button class="bg-rose-600 text-white px-3 py-1 rounded-xl text-[9px] font-bold">Block User</button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- PAYMENT PROCESSING -->
-                    <section>
-                        <h4 class="font-bold text-slate-800 mb-4 px-2">पेंडिंग पेआउट (Pending)</h4>
-                        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                            <div class="flex justify-between items-center mb-4">
-                                <div>
-                                    <p class="text-sm font-bold text-slate-800">सोनू राज</p>
-                                    <p class="text-[10px] text-slate-400">UPI: sonu@ybl</p>
-                                </div>
-                                <p class="text-lg font-black text-slate-800">₹ 350.00</p>
-                            </div>
-                            <button onclick="showStatus('भुगतान सफलतापूर्वक भेजा गया!')" class="w-full bg-slate-900 text-white py-3 rounded-2xl text-xs font-bold shadow-lg active:scale-95 transition-all">Pay Request</button>
-                        </div>
-                    </section>
-                </main>
-            </div>
-
-            <!-- BOTTOM NAVIGATION -->
-            <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-slate-200 p-2 rounded-full shadow-2xl flex gap-1 z-40">
-                <button id="navUser" onclick="switchPage('user')" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-600 text-white shadow-xl shadow-indigo-100">User</button>
-                <button id="navOwner" onclick="switchPage('owner')" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:bg-slate-50">Owner</button>
-            </nav>
-        </div>
-
-        <!-- PART 4. PAYMENT SYSTEM: WITHDRAW MODAL -->
-        <div id="withdrawModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end">
-            <div class="bg-white w-full rounded-t-[3rem] p-10 animate-slide-up">
-                <div class="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-10"></div>
-                <h2 class="text-2xl font-black text-slate-800 mb-2 text-center">Payout Request</h2>
-                <p class="text-center text-slate-400 text-xs mb-10">न्यूनतम राशि ₹100 होनी चाहिए।</p>
-                
-                <div class="space-y-6">
-                    <div class="flex gap-4">
-                        <div class="flex-1 bg-indigo-50 border-2 border-indigo-600 p-4 rounded-3xl flex flex-col items-center gap-2">
-                            <i class="fa-solid fa-qrcode text-indigo-600 text-xl"></i>
-                            <span class="text-[10px] font-bold">UPI / QR</span>
-                        </div>
-                        <div class="flex-1 bg-slate-50 border border-slate-100 p-4 rounded-3xl flex flex-col items-center gap-2 opacity-50">
-                            <i class="fa-solid fa-building-columns text-slate-400 text-xl"></i>
-                            <span class="text-[10px] font-bold">Bank Transfer</span>
-                        </div>
-                    </div>
-                    
-                    <input type="text" placeholder="UPI ID (उदा: ramesh@okaxis)" class="w-full bg-slate-50 border border-slate-100 p-5 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-600 outline-none transition-all">
-                    
-                    <button class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-sm shadow-xl hover:shadow-indigo-200 transition-all">Withdraw Now</button>
-                    <button onclick="closeWithdrawModal()" class="w-full text-slate-400 font-bold py-2 text-[10px] uppercase tracking-widest">Cancel</button>
+            <div class="flex flex-col gap-2 flex-1 max-w-[150px]">
+                <span class="text-[9px] uppercase font-black text-slate-400 tracking-tighter">Vaat karvano samay</span>
+                <input type="range" id="speechLength" min="15" max="100" value="40" class="range-slider appearance-none bg-slate-800 h-1.5 rounded-full outline-none">
+                <div class="flex justify-between text-[8px] text-slate-500 font-black">
+                    <span>TURBO</span>
+                    <span>DETAIL</span>
                 </div>
             </div>
         </div>
 
-        <!-- AD OVERLAY (Simulation for Part 3) -->
-        <div id="adOverlay" class="fixed inset-0 bg-slate-950/95 z-[60] hidden flex items-center justify-center p-8">
-            <div class="bg-white rounded-[3rem] p-12 max-w-xs w-full text-center relative shadow-2xl">
-                <div id="closeAd" class="absolute top-6 right-8 text-slate-300 hidden cursor-pointer" onclick="finishAd()">
-                    <i class="fa-solid fa-circle-xmark text-3xl hover:text-indigo-600 transition-colors"></i>
-                </div>
-                <div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                    <i class="fa-solid fa-film text-indigo-600 text-4xl animate-pulse"></i>
-                </div>
-                <h2 class="text-xl font-black text-slate-800 mb-4">विज्ञापन चल रहा है</h2>
-                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-4 shadow-inner">
-                    <div id="progressBar" class="bg-indigo-600 h-full w-0"></div>
-                </div>
-                <p id="timerText" class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">5 Seconds Remaining</p>
+        <div class="flex gap-4 w-full justify-center">
+            <button onclick="initCamera()" id="camBtn" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest hover:bg-indigo-500/20 transition-all">
+                <i data-lucide="video" class="w-3.5 h-3.5 text-indigo-400"></i> Nazar Rakhvanu Shuru Karo
+            </button>
+            <div id="statusIndicator" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/30 border border-white/5 text-[9px] font-black tracking-widest">
+                <span id="dot" class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                <span id="stTxt" class="text-slate-500 uppercase">Standby</span>
             </div>
-        </div>
-
-        <!-- STATUS BOX -->
-        <div id="statusBox" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-[2rem] shadow-2xl z-[70] hidden border border-white/10 transition-all">
-            <p id="statusText" class="text-xs font-bold flex items-center gap-3">
-                <i class="fa-solid fa-circle-check text-green-400"></i>
-                <span>Message</span>
-            </p>
         </div>
     </div>
 
     <script>
-        let currentBalance = 45.50;
-        let isLoginMode = true;
+        const apiKey = ""; 
+        let recognizer = null;
+        let isRunning = false;
+        let isSpeaking = false;
+        let cameraStarted = false;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        // PART 1: AUTH LOGIC
-        function toggleAuthMode() {
-            isLoginMode = !isLoginMode;
-            const title = document.querySelector('#authPage h1');
-            const subtitle = document.querySelector('#authSubtitle');
-            const btn = document.querySelector('#authForm button');
-            const toggleText = document.querySelector('#authForm p span');
+        // Voice Engine Module
+        const STABLE_VOICE = "Aoede";
+
+        function init() {
+            lucide.createIcons();
+            setupSTT();
             
-            if(isLoginMode) {
-                subtitle.innerText = "विज्ञापन देखें, रिवॉर्ड कमाएं";
-                btn.innerText = "प्रवेश करें (Login)";
-                toggleText.innerText = "यहाँ रजिस्टर करें";
-            } else {
-                subtitle.innerText = "आज ही अपनी यात्रा शुरू करें";
-                btn.innerText = "अकाउंट बनाएं (Signup)";
-                toggleText.innerText = "लॉगिन करें";
-            }
+            const hour = new Date().getHours();
+            if (hour < 20 && hour > 2) document.getElementById('spiritReminder').style.display = 'none';
         }
 
-        function handleAuth() {
-            document.getElementById('authPage').classList.add('hidden');
-            document.getElementById('dashboardPage').classList.remove('hidden');
-            showStatus(isLoginMode ? 'सफलतापूर्वक लॉगिन हुआ!' : 'अकाउंट सफलतापूर्वक बन गया!');
+        // Camera Tracking
+        function initCamera() {
+            const video = document.getElementById('camVideo');
+            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+                video.srcObject = stream;
+                video.play();
+                cameraStarted = true;
+                document.getElementById('camBtn').innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-green-400"></i> Nazar Chalu Che';
+                lucide.createIcons();
+                startFaceTracker();
+            }).catch(err => {
+                console.error("Camera error");
+            });
         }
 
-        function logout() {
-            document.getElementById('authPage').classList.remove('hidden');
-            document.getElementById('dashboardPage').classList.add('hidden');
-        }
-
-        // NAVIGATION LOGIC
-        function switchPage(page) {
-            const userPage = document.getElementById('userPage');
-            const ownerPage = document.getElementById('ownerPage');
-            const navUser = document.getElementById('navUser');
-            const navOwner = document.getElementById('navOwner');
-
-            if(page === 'user') {
-                userPage.classList.remove('hidden');
-                ownerPage.classList.add('hidden');
-                navUser.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-600 text-white shadow-xl shadow-indigo-100";
-                navOwner.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:bg-slate-50";
-            } else {
-                userPage.classList.add('hidden');
-                ownerPage.classList.remove('hidden');
-                navOwner.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-slate-900 text-white shadow-xl";
-                navUser.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:bg-slate-50";
-            }
-        }
-
-        // PART 3: AD SIMULATION
-        function startAd() {
-            document.getElementById('adOverlay').classList.remove('hidden');
-            document.getElementById('progressBar').classList.add('animate-progress');
-            let time = 5;
-            const timer = setInterval(() => {
-                time--;
-                document.getElementById('timerText').innerText = time + ' Seconds Remaining';
-                if(time <= 0) {
-                    clearInterval(timer);
-                    document.getElementById('closeAd').classList.remove('hidden');
-                    document.getElementById('timerText').innerText = 'Ready to Claim!';
+        function startFaceTracker() {
+            const video = document.getElementById('camVideo');
+            const tracker = new tracking.ObjectTracker('face');
+            tracker.setInitialScale(4); tracker.setStepSize(2); tracker.setEdgesDensity(0.1);
+            tracking.track('#camVideo', tracker);
+            tracker.on('track', event => {
+                if (event.data.length > 0) {
+                    const rect = event.data[0];
+                    const x = (( (rect.x + rect.width / 2) / video.width) - 0.5) * -18;
+                    const y = (( (rect.y + rect.height / 2) / video.height) - 0.5) * 18;
+                    moveEyes(x, y);
                 }
-            }, 1000);
+            });
         }
 
-        function finishAd() {
-            currentBalance += 0.50;
-            document.getElementById('balance').innerText = currentBalance.toFixed(2);
-            document.getElementById('adOverlay').classList.add('hidden');
-            document.getElementById('progressBar').classList.remove('animate-progress');
-            document.getElementById('closeAd').classList.add('hidden');
-            document.getElementById('timerText').innerText = '5 Seconds Remaining';
-            showStatus('बधाई हो! ₹0.50 आपके वॉलेट में जुड़ गए हैं।');
+        function moveEyes(x, y) {
+            const pupils = document.querySelectorAll('.pupil');
+            const head = document.getElementById('headContainer');
+            pupils.forEach(p => p.style.transform = `translate(${x}px, ${y}px)`);
+            head.style.transform = `rotate(${x / 3}deg) translateY(${y / 4}px)`;
         }
 
-        function showStatus(msg) {
-            const box = document.getElementById('statusBox');
-            document.querySelector('#statusText span').innerText = msg;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 3000);
+        // Speech recognition
+        function setupSTT() {
+            const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechAPI) return;
+            recognizer = new SpeechAPI();
+            recognizer.lang = 'hi-IN'; // Sunne mate Hindi support
+            recognizer.continuous = false;
+
+            recognizer.onstart = () => {
+                updateUI("Saambhalu chu", "bg-green-500");
+                document.getElementById('aiTextDisplay').style.opacity = "0";
+            };
+
+            recognizer.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                getAIResponse(text);
+            };
+
+            recognizer.onend = () => {
+                if (isRunning && !isSpeaking) {
+                    setTimeout(() => { if(isRunning && !isSpeaking) recognizer.start(); }, 600);
+                }
+            };
         }
 
-        function openWithdrawModal() { document.getElementById('withdrawModal').classList.remove('hidden'); }
-        function closeWithdrawModal() { document.getElementById('withdrawModal').classList.add('hidden'); }
+        async function getAIResponse(input) {
+            updateUI("Vicharu chu", "bg-blue-400");
+            const length = document.getElementById('speechLength').value;
+            
+            const prompt = `Aap Tarun ji ki cute bachi dost hain. Reply Hinglish mein dein.
+            STRICT RULE: Only use one consistent cute voice. Be very sweet and cheerful.
+            Max response: ${Math.floor(length/8)} words.`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        contents: [{parts: [{text: input}]}],
+                        systemInstruction: {parts: [{text: prompt}]},
+                        generationConfig: {maxOutputTokens: parseInt(length), temperature: 0.7}
+                    })
+                });
+                const data = await res.json();
+                const reply = data.candidates[0].content.parts[0].text;
+                playStableVoice(reply);
+            } catch (e) {
+                playStableVoice("Internet uncle slow che, fari bolo!");
+            }
+        }
+
+        // Stable Cute Voice logic
+        async function playStableVoice(text, retry = 0) {
+            isSpeaking = true;
+            updateUI("Bolye chu", "bg-pink-500");
+            
+            const display = document.getElementById('aiTextDisplay');
+            display.innerText = text;
+            display.style.opacity = "1";
+            display.style.transform = "scale(1)";
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Say this like a cute 5yr old girl: ${text}` }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { 
+                                voiceConfig: { 
+                                    prebuiltVoiceConfig: { voiceName: STABLE_VOICE } 
+                                } 
+                            }
+                        }
+                    })
+                });
+
+                if (!res.ok) throw new Error("API failed");
+
+                const data = await res.json();
+                const pcmData = data.candidates[0].content.parts[0].inlineData.data;
+                const mime = data.candidates[0].content.parts[0].inlineData.mimeType;
+                const sRate = parseInt(mime.match(/rate=(\d+)/)?.[1] || 24000);
+                
+                await playAudio(pcmData, sRate);
+
+            } catch (err) {
+                // If API fails, retry once before doing anything else
+                if (retry < 1) {
+                    setTimeout(() => playStableVoice(text, retry + 1), 500);
+                    return;
+                }
+                
+                // If even retry fails, wait and show error but DON'T use robotic voice
+                updateUI("Aawaj ma bhul che", "bg-red-500");
+                cleanupTurn();
+            }
+        }
+
+        async function playAudio(base64, rate) {
+            const binary = atob(base64);
+            const bytes = new Int16Array(binary.length / 2);
+            for (let i = 0; i < binary.length; i += 2) {
+                bytes[i / 2] = (binary.charCodeAt(i + 1) << 8) | binary.charCodeAt(i);
+            }
+
+            const buffer = audioContext.createBuffer(1, bytes.length, rate);
+            buffer.getChannelData(0).set(Array.from(bytes).map(v => v / 32768));
+
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            
+            document.getElementById('characterStage').classList.add('is-speaking');
+            source.start();
+            source.onended = () => cleanupTurn();
+        }
+
+        function cleanupTurn() {
+            document.getElementById('characterStage').classList.remove('is-speaking');
+            isSpeaking = false;
+            if (isRunning) {
+                setTimeout(() => { if(isRunning) recognizer.start(); }, 400);
+            } else {
+                updateUI("Standby", "bg-slate-600");
+            }
+        }
+
+        function toggleMain() {
+            if (audioContext.state === 'suspended') audioContext.resume();
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('micIcon').innerHTML = '<i data-lucide="square"></i>';
+                document.querySelector('.control-panel').classList.add('glow-active');
+                lucide.createIcons();
+                recognizer.start();
+            } else {
+                isRunning = false;
+                recognizer.stop();
+                document.getElementById('micIcon').innerHTML = '<i data-lucide="mic"></i>';
+                document.querySelector('.control-panel').classList.remove('glow-active');
+                lucide.createIcons();
+                updateUI("Standby", "bg-slate-600");
+            }
+        }
+
+        function updateUI(t, c) {
+            document.getElementById('stTxt').innerText = t;
+            document.getElementById('dot').className = `w-1.5 h-1.5 rounded-full ${c}`;
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
