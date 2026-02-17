@@ -1,479 +1,310 @@
 <!DOCTYPE html>
-<html lang="gu">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cute AI Dost - Integrated Pro Edition</title>
+    <title>Hisab Kitaab Tracker | Personal Ledger</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
     <style>
-        :root {
-            --skin: #ffe0bd;
-            --hair: #4b2c20;
-            --shirt: #ffeb3b;
-            --pink: #f472b6;
+        /* Custom scrollbar for better aesthetics */
+        .transaction-list-container::-webkit-scrollbar {
+            width: 8px;
         }
-
-        body {
-            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
-            overflow: hidden;
+        .transaction-list-container::-webkit-scrollbar-thumb {
+            background-color: #d1d5db; /* gray-300 */
+            border-radius: 4px;
         }
-
-        .character-stage {
-            position: relative;
-            width: 350px;
-            height: 420px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
+        .transaction-list-container::-webkit-scrollbar-track {
+            background-color: #f3f4f6; /* gray-100 */
         }
-
-        .head-group {
-            position: relative;
-            z-index: 10;
-            transition: transform 0.1s linear; 
+        /* Custom focus rings for accessibility and aesthetics */
+        input:focus, select:focus, button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4); /* indigo-500 shadow */
         }
-
-        .head-base {
-            width: 160px;
-            height: 170px;
-            background: var(--skin);
-            border-radius: 80px 80px 65px 65px;
-            position: relative;
-            box-shadow: inset -10px -10px 25px rgba(0,0,0,0.15);
+        .animate-pop-in {
+            animation: popIn 0.3s ease-out;
         }
-
-        .bun {
-            width: 70px;
-            height: 70px;
-            background: var(--hair);
-            border-radius: 50%;
-            position: absolute;
-            top: -30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .bun-l { left: -15px; }
-        .bun-r { right: -15px; }
-
-        .eye-container {
-            position: absolute;
-            top: 65px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            padding: 0 30px;
-        }
-        .eye {
-            width: 40px;
-            height: 50px;
-            background: white;
-            border-radius: 50%;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(0,0,0,0.1);
-        }
-        .pupil {
-            width: 26px;
-            height: 26px;
-            background: #23110a;
-            border-radius: 50%;
-            position: relative;
-            transition: transform 0.1s ease-out;
-        }
-        .pupil::after {
-            content: '';
-            position: absolute;
-            width: 10px; height: 10px; background: white;
-            border-radius: 50%; top: 4px; left: 4px;
-        }
-        .blink-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 0%;
-            background: var(--skin);
-            z-index: 5;
-            animation: blink-anim 4s infinite;
-        }
-        @keyframes blink-anim {
-            0%, 90%, 95%, 100% { height: 0%; }
-            92.5% { height: 100%; }
-        }
-
-        .mouth-area {
-            position: absolute;
-            bottom: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 45px;
-            height: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .mouth-shape {
-            width: 24px;
-            height: 6px;
-            background: #e11d48;
-            border-radius: 20px;
-            transition: all 0.1s ease;
-        }
-        .is-speaking .mouth-shape {
-            animation: mouth-sync 0.12s infinite alternate;
-        }
-        @keyframes mouth-sync {
-            0% { height: 4px; width: 18px; }
-            100% { height: 26px; width: 30px; border-radius: 40% 40% 30% 30%; }
-        }
-
-        .body-part {
-            width: 120px;
-            height: 130px;
-            background: var(--shirt);
-            border-radius: 50px 50px 20px 20px;
-            margin-top: -15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            z-index: 5;
-        }
-
-        #camVideo {
-            position: fixed;
-            top: -9999px;
-            left: -9999px;
-        }
-
-        .control-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            width: 100%;
-            max-width: 450px;
-        }
-
-        .range-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            background: #f472b6;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
-        }
-
-        .glow-active {
-            box-shadow: 0 0 30px rgba(244, 114, 182, 0.4);
-            animation: pulse-border 1.5s infinite alternate;
-        }
-
-        @keyframes pulse-border {
-            from { border-color: rgba(244, 114, 182, 0.2); }
-            to { border-color: rgba(244, 114, 182, 0.8); }
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen font-sans flex flex-col items-center justify-center p-4">
+<body class="bg-gray-50 min-h-screen font-sans">
 
-    <!-- Camera Feed -->
-    <video id="camVideo" width="320" height="240" preload autoplay loop muted></video>
-
-    <!-- Status Banner -->
-    <div id="spiritReminder" class="fixed top-6 flex items-center gap-2 text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-4 py-1.5 rounded-full font-bold tracking-widest uppercase animate-pulse">
-        <i data-lucide="sun" class="w-3 h-3"></i> 9 PM Na Sadhana Mate Taiyar
-    </div>
-
-    <!-- Avatar Container -->
-    <div id="characterStage" class="character-stage mb-4">
-        <div class="head-group" id="headContainer">
-            <div class="bun bun-l"></div>
-            <div class="bun bun-r"></div>
-            <div class="head-base">
-                <div class="eye-container">
-                    <div class="eye"><div class="blink-layer"></div><div class="pupil"></div></div>
-                    <div class="eye"><div class="blink-layer"></div><div class="pupil"></div></div>
-                </div>
-                <div class="mouth-area">
-                    <div id="mouthShape" class="mouth-shape"></div>
-                </div>
-            </div>
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold text-indigo-600 tracking-tight">
+                Hisab <span class="text-gray-800">Kitaab</span>
+            </h1>
+            <nav>
+                <a href="#input-form" class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition duration-150 mr-4">Add Entry</a>
+                <a href="#summary" class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition duration-150">Summary</a>
+            </nav>
         </div>
-        <div class="body-part"></div>
-    </div>
+    </header>
 
-    <!-- AI Voice Locked Indicator -->
-    <div class="mb-4 flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
-        <i data-lucide="lock" class="w-3 h-3 text-pink-400"></i>
-        <span class="text-[9px] font-bold text-pink-400 uppercase tracking-widest">Aoede Voice Locked (Cute)</span>
-    </div>
-
-    <!-- Minimal Subtitle -->
-    <div id="aiTextDisplay" class="text-center max-w-lg mb-6 h-14 text-xl font-semibold text-pink-300 opacity-0 transition-all duration-300 scale-95 drop-shadow-lg">
-        "Tarun bhai, hu taiyar chu!"
-    </div>
-
-    <!-- Minimal Controls -->
-    <div class="control-panel p-6 rounded-[2.5rem] flex flex-col items-center gap-6 shadow-2xl">
-        <div class="flex items-center gap-10 w-full justify-center">
-            <button id="micBtn" onclick="toggleMain()" class="w-20 h-20 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 flex items-center justify-center shadow-xl shadow-pink-500/20 active:scale-90 transition-all">
-                <i data-lucide="mic" id="micIcon" class="w-8 h-8 text-white"></i>
-            </button>
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
+        
+        <!-- Summary Dashboard -->
+        <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             
-            <div class="flex flex-col gap-2 flex-1 max-w-[150px]">
-                <span class="text-[9px] uppercase font-black text-slate-400 tracking-tighter">Bolvanu Samay (Time)</span>
-                <input type="range" id="speechLength" min="15" max="120" value="50" class="range-slider appearance-none bg-slate-800 h-1.5 rounded-full outline-none">
-                <div class="flex justify-between text-[8px] text-slate-500 font-black">
-                    <span>CHOTU (Short)</span>
-                    <span>MOTU (Long)</span>
+            <!-- Total Balance Card -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-600 hover:shadow-xl transition duration-300">
+                <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Net Balance</p>
+                <div id="balance-display" class="mt-2 text-4xl font-bold text-gray-900">
+                    ₹ 0.00
                 </div>
+                <p class="text-xs text-gray-400 mt-1">Total Assets minus Total Liabilities</p>
             </div>
-        </div>
 
-        <div class="flex gap-4 w-full justify-center">
-            <button onclick="initCamera()" id="camBtn" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest hover:bg-indigo-500/20 transition-all">
-                <i data-lucide="video" class="w-3.5 h-3.5 text-indigo-400"></i> Nazar Rakhvanu Shuru Karo
-            </button>
-            <div id="statusIndicator" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/30 border border-white/5 text-[9px] font-black tracking-widest">
-                <span id="dot" class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
-                <span id="stTxt" class="text-slate-500 uppercase">Standby</span>
+            <!-- Total Income Card -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-emerald-500 hover:shadow-xl transition duration-300">
+                <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Income</p>
+                <div id="income-display" class="mt-2 text-3xl font-bold text-emerald-600">
+                    + ₹ 0.00
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Earnings and Credits</p>
             </div>
+
+            <!-- Total Expense Card -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-rose-500 hover:shadow-xl transition duration-300">
+                <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Expense</p>
+                <div id="expense-display" class="mt-2 text-3xl font-bold text-rose-600">
+                    - ₹ 0.00
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Expenditures and Debits</p>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Transaction Input Form -->
+            <section id="input-form" class="lg:col-span-1 bg-white p-6 rounded-xl shadow-2xl h-fit sticky top-[90px]">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-3">Add New Transaction</h2>
+                
+                <form id="transaction-form">
+                    
+                    <div class="mb-4">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description / Reason</label>
+                        <input type="text" id="description" placeholder="Salary, Rent, Groceries, etc." required class="w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-500 transition duration-150">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                        <input type="number" id="amount" placeholder="e.g., 5000" required min="0.01" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-500 transition duration-150">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center p-3 w-1/2 rounded-lg cursor-pointer transition duration-150 hover:bg-emerald-50 bg-white border border-gray-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-100">
+                                <input type="radio" name="type" value="income" required class="form-radio h-4 w-4 text-emerald-600 border-gray-300" checked>
+                                <span class="ml-3 font-medium text-gray-700">Income (Aamad)</span>
+                            </label>
+                            <label class="flex items-center p-3 w-1/2 rounded-lg cursor-pointer transition duration-150 hover:bg-rose-50 bg-white border border-gray-300 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-100">
+                                <input type="radio" name="type" value="expense" class="form-radio h-4 w-4 text-rose-600 border-gray-300">
+                                <span class="ml-3 font-medium text-gray-700">Expense (Kharch)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 transform hover:scale-[1.01] flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Add Transaction
+                    </button>
+                </form>
+            </section>
+
+            <!-- Transaction History List -->
+            <section class="lg:col-span-2 bg-white p-6 rounded-xl shadow-2xl">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-3 flex justify-between items-center">
+                    Transaction History
+                    <span id="transaction-count" class="text-sm font-medium text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">0 Entries</span>
+                </h2>
+
+                <div class="overflow-y-auto transaction-list-container h-[400px]">
+                    <ul id="transaction-list" class="space-y-3">
+                        <!-- Transactions will be inserted here by JavaScript -->
+                        <li id="empty-state" class="text-center p-12 text-gray-500 italic bg-gray-50 rounded-lg">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                            Start adding your Income and Expenses above.<br>
+                            Your ledger will appear here!
+                        </li>
+                    </ul>
+                </div>
+            </section>
         </div>
-    </div>
+        
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 py-6 border-t bg-gray-50">
+        <div class="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
+            &copy; 2024 Hisab Kitaab Tracker. Developed for personal account management.
+        </div>
+    </footer>
 
     <script>
-        const apiKey = ""; 
-        let recognizer = null;
-        let isRunning = false;
-        let isSpeaking = false;
-        let cameraStarted = false;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const form = document.getElementById('transaction-form');
+        const list = document.getElementById('transaction-list');
+        const emptyState = document.getElementById('empty-state');
+        
+        // Summary Displays
+        const balanceDisplay = document.getElementById('balance-display');
+        const incomeDisplay = document.getElementById('income-display');
+        const expenseDisplay = document.getElementById('expense-display');
+        const transactionCount = document.getElementById('transaction-count');
 
-        // Voice Engine Module
-        const STABLE_VOICE = "Aoede";
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 
-        function init() {
-            lucide.createIcons();
-            setupSTT();
+        // Function to save transactions to Local Storage
+        const saveTransactions = () => {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        };
+
+        // Function to format currency (Indian Rupee)
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 2,
+            }).format(amount);
+        };
+
+        // Function to update the summary dashboard
+        const updateSummary = () => {
+            const totalIncome = transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
             
-            const hour = new Date().getHours();
-            if (hour < 20 && hour > 2) document.getElementById('spiritReminder').style.display = 'none';
-        }
-
-        // Camera Tracking
-        function initCamera() {
-            const video = document.getElementById('camVideo');
-            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-                video.srcObject = stream;
-                video.play();
-                cameraStarted = true;
-                document.getElementById('camBtn').innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-green-400"></i> Nazar Chalu Che';
-                lucide.createIcons();
-                startFaceTracker();
-            }).catch(err => {
-                console.error("Camera error");
-            });
-        }
-
-        function startFaceTracker() {
-            const video = document.getElementById('camVideo');
-            const tracker = new tracking.ObjectTracker('face');
-            tracker.setInitialScale(4); tracker.setStepSize(2); tracker.setEdgesDensity(0.1);
-            tracking.track('#camVideo', tracker);
-            tracker.on('track', event => {
-                if (event.data.length > 0) {
-                    const rect = event.data[0];
-                    const x = (( (rect.x + rect.width / 2) / video.width) - 0.5) * -18;
-                    const y = (( (rect.y + rect.height / 2) / video.height) - 0.5) * 18;
-                    moveEyes(x, y);
-                }
-            });
-        }
-
-        function moveEyes(x, y) {
-            const pupils = document.querySelectorAll('.pupil');
-            const head = document.getElementById('headContainer');
-            pupils.forEach(p => p.style.transform = `translate(${x}px, ${y}px)`);
-            head.style.transform = `rotate(${x / 3}deg) translateY(${y / 4}px)`;
-        }
-
-        // Speech recognition
-        function setupSTT() {
-            const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechAPI) return;
-            recognizer = new SpeechAPI();
-            recognizer.lang = 'hi-IN';
-            recognizer.continuous = false;
-
-            recognizer.onstart = () => {
-                updateUI("Saambhalu chu", "bg-green-500");
-                document.getElementById('aiTextDisplay').style.opacity = "0";
-            };
-
-            recognizer.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                
-                // Python Script Commands Logic (Integrated)
-                handlePythonCommands(text);
-            };
-
-            recognizer.onend = () => {
-                if (isRunning && !isSpeaking) {
-                    setTimeout(() => { if(isRunning && !isSpeaking) recognizer.start(); }, 600);
-                }
-            };
-        }
-
-        function handlePythonCommands(text) {
-            const query = text.toLowerCase();
+            const totalExpense = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
             
-            if (query.includes("open youtube")) {
-                window.open("https://www.youtube.com", "_blank");
-                playStableVoice("YouTube kholi rahyu chu, maze karo!");
-                return;
-            }
-            if (query.includes("open google")) {
-                window.open("https://www.google.com", "_blank");
-                playStableVoice("Google uncle hazir che!");
-                return;
-            }
-            if (query.includes("open gmail")) {
-                window.open("https://mail.google.com", "_blank");
-                playStableVoice("Gmail kholi nakhyu!");
-                return;
-            }
-            if (query.includes("search") || query.includes("search on google")) {
-                const searchTerm = query.replace("search", "").replace("on google", "").trim();
-                window.open(`https://www.google.com/search?q=${searchTerm}`, "_blank");
-                playStableVoice(`${searchTerm} mate Google kari rahi chu.`);
-                return;
-            }
+            const netBalance = totalIncome - totalExpense;
 
-            // Default Gemini Response
-            getAIResponse(text);
-        }
+            // Update DOM
+            balanceDisplay.textContent = formatCurrency(netBalance);
+            incomeDisplay.textContent = `+ ${formatCurrency(totalIncome).replace('₹', '')}`;
+            expenseDisplay.textContent = `- ${formatCurrency(totalExpense).replace('₹', '')}`;
+            transactionCount.textContent = `${transactions.length} Entries`;
 
-        async function getAIResponse(input) {
-            updateUI("Vicharu chu", "bg-blue-400");
-            const length = document.getElementById('speechLength').value;
-            
-            const prompt = `Aap Tarun ji ki cute bachi dost hain. Reply Hinglish mein dein. 
-            Aapne abhi browser commands handle karna seekha hai (YouTube, Google). 
-            Jawab chota aur cute rakhein (max ${Math.floor(length/8)} words).`;
-
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        contents: [{parts: [{text: input}]}],
-                        systemInstruction: {parts: [{text: prompt}]},
-                        generationConfig: {maxOutputTokens: parseInt(length), temperature: 0.7}
-                    })
-                });
-                const data = await res.json();
-                const reply = data.candidates[0].content.parts[0].text;
-                playStableVoice(reply);
-            } catch (e) {
-                playStableVoice("Internet uncle slow che, fari bolo!");
-            }
-        }
-
-        async function playStableVoice(text, retry = 0) {
-            isSpeaking = true;
-            updateUI("Bolye chu", "bg-pink-500");
-            
-            const display = document.getElementById('aiTextDisplay');
-            display.innerText = text;
-            display.style.opacity = "1";
-            display.style.transform = "scale(1)";
-
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Say this like a cute 5yr old girl: ${text}` }] }],
-                        generationConfig: {
-                            responseModalities: ["AUDIO"],
-                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: STABLE_VOICE } } }
-                        }
-                    })
-                });
-
-                if (!res.ok) throw new Error("API failed");
-                const data = await res.json();
-                const pcmData = data.candidates[0].content.parts[0].inlineData.data;
-                const mime = data.candidates[0].content.parts[0].inlineData.mimeType;
-                const sRate = parseInt(mime.match(/rate=(\d+)/)?.[1] || 24000);
-                
-                await playAudio(pcmData, sRate);
-
-            } catch (err) {
-                if (retry < 1) {
-                    setTimeout(() => playStableVoice(text, retry + 1), 500);
-                    return;
-                }
-                updateUI("Aawaj ma bhul che", "bg-red-500");
-                cleanupTurn();
-            }
-        }
-
-        async function playAudio(base64, rate) {
-            const binary = atob(base64);
-            const bytes = new Int16Array(binary.length / 2);
-            for (let i = 0; i < binary.length; i += 2) {
-                bytes[i / 2] = (binary.charCodeAt(i + 1) << 8) | binary.charCodeAt(i);
-            }
-
-            const buffer = audioContext.createBuffer(1, bytes.length, rate);
-            buffer.getChannelData(0).set(Array.from(bytes).map(v => v / 32768));
-
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.destination);
-            
-            document.getElementById('characterStage').classList.add('is-speaking');
-            source.start();
-            source.onended = () => cleanupTurn();
-        }
-
-        function cleanupTurn() {
-            document.getElementById('characterStage').classList.remove('is-speaking');
-            isSpeaking = false;
-            if (isRunning) {
-                setTimeout(() => { if(isRunning) recognizer.start(); }, 400);
+            // Adjust balance color
+            if (netBalance >= 0) {
+                balanceDisplay.classList.remove('text-rose-600');
+                balanceDisplay.classList.add('text-indigo-600');
             } else {
-                updateUI("Standby", "bg-slate-600");
+                balanceDisplay.classList.remove('text-indigo-600');
+                balanceDisplay.classList.add('text-rose-600');
             }
-        }
+        };
 
-        function toggleMain() {
-            if (audioContext.state === 'suspended') audioContext.resume();
-            if (!isRunning) {
-                isRunning = true;
-                document.getElementById('micIcon').innerHTML = '<i data-lucide="square"></i>';
-                document.querySelector('.control-panel').classList.add('glow-active');
-                lucide.createIcons();
-                recognizer.start();
-            } else {
-                isRunning = false;
-                recognizer.stop();
-                document.getElementById('micIcon').innerHTML = '<i data-lucide="mic"></i>';
-                document.querySelector('.control-panel').classList.remove('glow-active');
-                lucide.createIcons();
-                updateUI("Standby", "bg-slate-600");
+        // Function to render the transaction list
+        const renderTransactions = () => {
+            list.innerHTML = ''; // Clear existing list
+
+            if (transactions.length === 0) {
+                emptyState.style.display = 'block';
+                list.appendChild(emptyState);
+                updateSummary();
+                return;
             }
-        }
 
-        function updateUI(t, c) {
-            document.getElementById('stTxt').innerText = t;
-            document.getElementById('dot').className = `w-1.5 h-1.5 rounded-full ${c}`;
-        }
+            emptyState.style.display = 'none';
 
-        window.onload = init;
+            // Sort by date (newest first)
+            transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            transactions.forEach(transaction => {
+                const isIncome = transaction.type === 'income';
+                const sign = isIncome ? '+' : '-';
+                const colorClass = isIncome ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                const borderClass = isIncome ? 'border-emerald-500' : 'border-rose-500';
+
+                const listItem = document.createElement('li');
+                listItem.className = `animate-pop-in flex justify-between items-center p-4 border-l-4 ${borderClass} rounded-lg shadow-sm hover:shadow-md transition duration-200 bg-white`;
+                listItem.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-base font-medium text-gray-800">${transaction.description}</span>
+                        <span class="text-xs text-gray-400 mt-0.5">${new Date(transaction.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg font-bold ${colorClass} px-3 py-1 rounded-full text-sm">
+                            ${sign} ${formatCurrency(transaction.amount)}
+                        </span>
+                        <button 
+                            data-id="${transaction.id}"
+                            class="delete-btn text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition duration-150"
+                            title="Delete Transaction"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(listItem);
+            });
+
+            // Re-attach delete listeners
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', deleteTransaction);
+            });
+
+            updateSummary();
+        };
+
+        // Function to handle form submission
+        const addTransaction = (e) => {
+            e.preventDefault();
+
+            const description = document.getElementById('description').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.querySelector('input[name="type"]:checked').value;
+
+            if (description === '' || isNaN(amount) || amount <= 0) {
+                alert('Please enter a valid description and amount.');
+                return;
+            }
+
+            const newTransaction = {
+                id: Date.now(),
+                description,
+                amount,
+                type,
+                date: new Date().toISOString(),
+            };
+
+            transactions.push(newTransaction);
+            saveTransactions();
+            renderTransactions();
+
+            // Clear form
+            form.reset();
+            document.getElementById('description').focus();
+        };
+
+        // Function to delete a transaction
+        const deleteTransaction = (e) => {
+            const idToDelete = parseInt(e.currentTarget.dataset.id);
+            
+            // Filter out the transaction with the matching ID
+            transactions = transactions.filter(t => t.id !== idToDelete);
+            
+            saveTransactions();
+            renderTransactions();
+        };
+
+        // Event Listeners
+        form.addEventListener('submit', addTransaction);
+
+        // Initial Load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTransactions();
+        });
+
     </script>
 </body>
 </html>
